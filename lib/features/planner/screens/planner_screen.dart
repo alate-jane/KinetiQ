@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../data/models/workout_plan.dart';
 import '../providers/planner_provider.dart';
+import '../../voice_coach/services/foundry_voice_coach.dart';
 
 class PlannerScreen extends ConsumerWidget {
   const PlannerScreen({super.key});
@@ -88,7 +89,9 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             _FeatureRow(icon: '🏋️', text: 'Works with your equipment'),
             const SizedBox(height: 12),
-            _FeatureRow(icon: '⚡', text: 'Powered by Azure OpenAI GPT-4o'),
+            _FeatureRow(icon: '⚡', text: 'Powered by GitHub Models (Azure AI)'),
+            const SizedBox(height: 12),
+            _FeatureRow(icon: '🎙️', text: 'Voice Coach via Azure Foundry TTS'),
             const SizedBox(height: 48),
             ElevatedButton(
               onPressed: onGenerate,
@@ -210,7 +213,7 @@ class _LoadingStateState extends State<_LoadingState>
               ),
               const SizedBox(height: 40),
               Text(
-                'Azure OpenAI is working${'.' * _dotCount}',
+                'Microsoft AI is working${'.' * _dotCount}',
                 style: GoogleFonts.inter(
                   fontSize: 22, fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
@@ -553,10 +556,32 @@ class _WorkoutDayDetail extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 // Exercise Card
 // ─────────────────────────────────────────────────────────────────────────────
-class _ExerciseCard extends StatelessWidget {
+class _ExerciseCard extends StatefulWidget {
   final WorkoutExercise exercise;
   final int index;
   const _ExerciseCard({required this.exercise, required this.index});
+
+  @override
+  State<_ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<_ExerciseCard> {
+  final _voice = FoundryVoiceCoach();
+  bool _speaking = false;
+
+  Future<void> _speak() async {
+    if (_speaking) return;
+    setState(() => _speaking = true);
+    await _voice.announceExercise(
+      widget.exercise.name,
+      widget.exercise.sets,
+      widget.exercise.reps,
+    );
+    // Also speak the form tip
+    await Future.delayed(const Duration(milliseconds: 1500));
+    await _voice.speak(widget.exercise.instructions);
+    if (mounted) setState(() => _speaking = false);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -581,7 +606,7 @@ class _ExerciseCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Center(
-                  child: Text('$index',
+                  child: Text('${widget.index}',
                       style: GoogleFonts.inter(
                         fontSize: 14, fontWeight: FontWeight.w800,
                         color: AppColors.primary,
@@ -589,7 +614,8 @@ class _ExerciseCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(exercise.type.emoji, style: const TextStyle(fontSize: 16)),
+              Text(widget.exercise.type.emoji,
+                  style: const TextStyle(fontSize: 16)),
             ],
           ),
           const SizedBox(width: 14),
@@ -599,21 +625,59 @@ class _ExerciseCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(exercise.name,
-                    style: GoogleFonts.inter(
-                      fontSize: 16, fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    )),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(widget.exercise.name,
+                          style: GoogleFonts.inter(
+                            fontSize: 16, fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          )),
+                    ),
+                    // 🎙️ Voice Coach button — Azure Foundry IQ
+                    GestureDetector(
+                      onTap: _speak,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 32, height: 32,
+                        decoration: BoxDecoration(
+                          color: _speaking
+                              ? AppColors.primary.withValues(alpha: 0.2)
+                              : AppColors.background,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _speaking
+                                ? AppColors.primary
+                                : const Color(0xFF1E2D48),
+                          ),
+                        ),
+                        child: Center(
+                          child: _speaking
+                              ? const SizedBox(
+                                  width: 14, height: 14,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : const Text('🎙️',
+                                  style: TextStyle(fontSize: 14)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 8),
 
                 // Sets / Reps / Rest chips
                 Row(
                   children: [
-                    _Chip('${exercise.sets} sets', AppColors.accent),
+                    _Chip('${widget.exercise.sets} sets', AppColors.accent),
                     const SizedBox(width: 6),
-                    _Chip(exercise.reps, AppColors.primary),
+                    _Chip(widget.exercise.reps, AppColors.primary),
                     const SizedBox(width: 6),
-                    _Chip('${exercise.restSeconds}s rest', AppColors.textMuted),
+                    _Chip('${widget.exercise.restSeconds}s rest',
+                        AppColors.textMuted),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -624,7 +688,7 @@ class _ExerciseCard extends StatelessWidget {
                         size: 13, color: AppColors.textMuted),
                     const SizedBox(width: 4),
                     Expanded(
-                      child: Text(exercise.instructions,
+                      child: Text(widget.exercise.instructions,
                           style: GoogleFonts.inter(
                             fontSize: 12, color: AppColors.textSecondary,
                             height: 1.4,
