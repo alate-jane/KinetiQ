@@ -4,7 +4,10 @@ import '../../../core/config/app_config.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/workout_plan.dart';
 
-class AzureOpenAIService {
+/// Microsoft AI Service — powered by GitHub Models (Azure AI inference backend)
+/// Endpoint: models.inference.ai.azure.com — a Microsoft Azure service
+/// Model: gpt-4o or Microsoft Phi-4 depending on availability
+class MicrosoftAIService {
   // ── Prompt Builder ──────────────────────────────────────────────────────────
 
   String _buildSystemPrompt() => '''
@@ -81,18 +84,19 @@ Rules:
   // ── API Call ────────────────────────────────────────────────────────────────
 
   Future<WorkoutPlan> generatePlan(UserProfile profile) async {
-    if (AppConfig.azureApiKey.isEmpty) {
-      // Return a demo plan if no key is configured yet
+    if (AppConfig.githubToken.isEmpty) {
       return _demoPlan(profile);
     }
 
     final response = await http.post(
-      Uri.parse(AppConfig.azureChatUrl),
+      Uri.parse(AppConfig.chatUrl),
       headers: {
         'Content-Type': 'application/json',
-        'api-key': AppConfig.azureApiKey,
+        // GitHub Models uses standard Bearer token auth
+        'Authorization': 'Bearer ${AppConfig.githubToken}',
       },
       body: jsonEncode({
+        'model': AppConfig.azureDeployment,
         'messages': [
           {'role': 'system', 'content': _buildSystemPrompt()},
           {'role': 'user', 'content': _buildUserPrompt(profile)},
@@ -104,8 +108,8 @@ Rules:
     );
 
     if (response.statusCode != 200) {
-      throw AzureOpenAIException(
-        'Azure OpenAI error ${response.statusCode}: ${response.body}',
+      throw MicrosoftAIException(
+        'Microsoft AI error ${response.statusCode}: ${response.body}',
       );
     }
 
@@ -121,7 +125,7 @@ Rules:
     );
   }
 
-  // ── Demo Plan (no API key needed) ───────────────────────────────────────────
+  // ── Demo Plan ───────────────────────────────────────────────────────────────
 
   WorkoutPlan _demoPlan(UserProfile profile) {
     return WorkoutPlan(
@@ -135,133 +139,51 @@ Rules:
       level: profile.level,
       createdAt: DateTime.now(),
       weeks: List.generate(4, (wi) {
-        final weekNum = wi + 1;
         return WorkoutWeek(
-          weekNumber: weekNum,
+          weekNumber: wi + 1,
           focus: ['Foundation & Form', 'Building Volume', 'Power & Endurance', 'Peak Week'][wi],
           days: [
-            WorkoutDay(
-              dayName: 'Monday',
-              sessionName: 'Full Body Strength',
-              isRest: false,
-              estimatedMinutes: 35 + (wi * 5),
-              muscleGroups: const ['Chest', 'Back', 'Legs'],
+            WorkoutDay(dayName: 'Monday', sessionName: 'Full Body Strength', isRest: false,
+              estimatedMinutes: 35 + (wi * 5), muscleGroups: const ['Chest', 'Back', 'Legs'],
               exercises: [
-                WorkoutExercise(
-                  name: 'Push-up',
-                  type: ExerciseType.bodyweight,
-                  sets: 3 + wi,
-                  reps: '${10 + wi * 2}',
-                  restSeconds: 60,
-                  muscleGroups: const ['Chest', 'Triceps'],
-                  instructions: 'Keep core tight, lower chest to floor',
-                ),
-                WorkoutExercise(
-                  name: 'Squat',
-                  type: ExerciseType.bodyweight,
-                  sets: 3 + wi,
-                  reps: '${12 + wi * 2}',
-                  restSeconds: 60,
-                  muscleGroups: const ['Quads', 'Glutes'],
-                  instructions: 'Chest up, knees track over toes',
-                ),
-                WorkoutExercise(
-                  name: 'Plank',
-                  type: ExerciseType.bodyweight,
-                  sets: 3,
-                  reps: '${30 + wi * 10} sec',
-                  restSeconds: 45,
-                  muscleGroups: const ['Core', 'Shoulders'],
-                  instructions: 'Neutral spine, squeeze glutes',
-                ),
-              ],
-            ),
-            WorkoutDay(
-              dayName: 'Tuesday',
-              sessionName: 'Rest & Recovery',
-              isRest: true,
-              estimatedMinutes: 0,
-              muscleGroups: const [],
-              exercises: const [],
-            ),
-            WorkoutDay(
-              dayName: 'Wednesday',
-              sessionName: 'Upper Body Focus',
-              isRest: false,
-              estimatedMinutes: 30 + (wi * 5),
-              muscleGroups: const ['Shoulders', 'Back', 'Arms'],
+                WorkoutExercise(name: 'Push-up', type: ExerciseType.bodyweight, sets: 3 + wi,
+                  reps: '${10 + wi * 2}', restSeconds: 60, muscleGroups: const ['Chest', 'Triceps'],
+                  instructions: 'Keep core tight, lower chest to floor'),
+                WorkoutExercise(name: 'Squat', type: ExerciseType.bodyweight, sets: 3 + wi,
+                  reps: '${12 + wi * 2}', restSeconds: 60, muscleGroups: const ['Quads', 'Glutes'],
+                  instructions: 'Chest up, knees track over toes'),
+                WorkoutExercise(name: 'Plank', type: ExerciseType.bodyweight, sets: 3,
+                  reps: '${30 + wi * 10} sec', restSeconds: 45, muscleGroups: const ['Core'],
+                  instructions: 'Neutral spine, squeeze glutes'),
+              ]),
+            WorkoutDay(dayName: 'Tuesday', sessionName: 'Rest & Recovery', isRest: true,
+              estimatedMinutes: 0, muscleGroups: const [], exercises: const []),
+            WorkoutDay(dayName: 'Wednesday', sessionName: 'Upper Body Focus', isRest: false,
+              estimatedMinutes: 30 + (wi * 5), muscleGroups: const ['Shoulders', 'Arms'],
               exercises: [
-                WorkoutExercise(
-                  name: 'Bicep Curl',
-                  type: ExerciseType.dumbbell,
-                  sets: 3,
-                  reps: '${10 + wi}',
-                  restSeconds: 60,
-                  muscleGroups: const ['Biceps'],
-                  instructions: 'Keep elbows pinned to sides',
-                ),
-                WorkoutExercise(
-                  name: 'Shoulder Press',
-                  type: ExerciseType.dumbbell,
-                  sets: 3,
-                  reps: '${10 + wi}',
-                  restSeconds: 60,
-                  muscleGroups: const ['Shoulders', 'Triceps'],
-                  instructions: 'Drive dumbbells straight overhead',
-                ),
-              ],
-            ),
-            WorkoutDay(
-              dayName: 'Thursday',
-              sessionName: 'Rest & Recovery',
-              isRest: true,
-              estimatedMinutes: 0,
-              muscleGroups: const [],
-              exercises: const [],
-            ),
-            WorkoutDay(
-              dayName: 'Friday',
-              sessionName: 'Lower Body & Core',
-              isRest: false,
-              estimatedMinutes: 35 + (wi * 5),
-              muscleGroups: const ['Glutes', 'Quads', 'Core'],
+                WorkoutExercise(name: 'Bicep Curl', type: ExerciseType.dumbbell, sets: 3,
+                  reps: '${10 + wi}', restSeconds: 60, muscleGroups: const ['Biceps'],
+                  instructions: 'Keep elbows pinned to sides'),
+                WorkoutExercise(name: 'Shoulder Press', type: ExerciseType.dumbbell, sets: 3,
+                  reps: '${10 + wi}', restSeconds: 60, muscleGroups: const ['Shoulders'],
+                  instructions: 'Drive dumbbells straight overhead'),
+              ]),
+            WorkoutDay(dayName: 'Thursday', sessionName: 'Rest & Recovery', isRest: true,
+              estimatedMinutes: 0, muscleGroups: const [], exercises: const []),
+            WorkoutDay(dayName: 'Friday', sessionName: 'Lower Body & Core', isRest: false,
+              estimatedMinutes: 35 + (wi * 5), muscleGroups: const ['Glutes', 'Quads', 'Core'],
               exercises: [
-                WorkoutExercise(
-                  name: 'Lunge',
-                  type: ExerciseType.bodyweight,
-                  sets: 3,
-                  reps: '${10 + wi} each leg',
-                  restSeconds: 60,
-                  muscleGroups: const ['Quads', 'Glutes'],
-                  instructions: 'Step forward, drop back knee gently',
-                ),
-                WorkoutExercise(
-                  name: 'Glute Bridge',
-                  type: ExerciseType.bodyweight,
-                  sets: 3,
-                  reps: '${15 + wi * 3}',
-                  restSeconds: 45,
-                  muscleGroups: const ['Glutes', 'Hamstrings'],
-                  instructions: 'Drive hips up, squeeze at the top',
-                ),
-              ],
-            ),
-            WorkoutDay(
-              dayName: 'Saturday',
-              sessionName: 'Active Recovery',
-              isRest: true,
-              estimatedMinutes: 0,
-              muscleGroups: const [],
-              exercises: const [],
-            ),
-            WorkoutDay(
-              dayName: 'Sunday',
-              sessionName: 'Rest',
-              isRest: true,
-              estimatedMinutes: 0,
-              muscleGroups: const [],
-              exercises: const [],
-            ),
+                WorkoutExercise(name: 'Lunge', type: ExerciseType.bodyweight, sets: 3,
+                  reps: '${10 + wi} each leg', restSeconds: 60, muscleGroups: const ['Quads', 'Glutes'],
+                  instructions: 'Step forward, drop back knee gently'),
+                WorkoutExercise(name: 'Glute Bridge', type: ExerciseType.bodyweight, sets: 3,
+                  reps: '${15 + wi * 3}', restSeconds: 45, muscleGroups: const ['Glutes'],
+                  instructions: 'Drive hips up, squeeze at the top'),
+              ]),
+            WorkoutDay(dayName: 'Saturday', sessionName: 'Active Recovery', isRest: true,
+              estimatedMinutes: 0, muscleGroups: const [], exercises: const []),
+            WorkoutDay(dayName: 'Sunday', sessionName: 'Rest', isRest: true,
+              estimatedMinutes: 0, muscleGroups: const [], exercises: const []),
           ],
         );
       }),
@@ -269,9 +191,9 @@ Rules:
   }
 }
 
-class AzureOpenAIException implements Exception {
+class MicrosoftAIException implements Exception {
   final String message;
-  const AzureOpenAIException(this.message);
+  const MicrosoftAIException(this.message);
   @override
-  String toString() => 'AzureOpenAIException: $message';
+  String toString() => 'MicrosoftAIException: $message';
 }

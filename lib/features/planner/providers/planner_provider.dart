@@ -56,7 +56,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
     _loadSavedPlan();
   }
 
-  final _service = AzureOpenAIService();
+  final _service = MicrosoftAIService();
 
   // Load any previously saved plan from SharedPreferences
   Future<void> _loadSavedPlan() async {
@@ -89,7 +89,7 @@ class PlannerNotifier extends StateNotifier<PlannerState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('workout_plan', jsonEncode(plan.toJson()));
       state = state.copyWith(status: PlanStatus.loaded, plan: plan, selectedWeek: 0, selectedDay: 0);
-    } on AzureOpenAIException catch (e) {
+    } on MicrosoftAIException catch (e) {
       state = state.copyWith(status: PlanStatus.error, errorMessage: e.message);
     } catch (e) {
       state = state.copyWith(status: PlanStatus.error, errorMessage: e.toString());

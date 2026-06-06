@@ -1,21 +1,14 @@
-/// KinetiQ — Azure OpenAI Configuration
+/// KinetiQ — GitHub Models Configuration
 ///
-/// Set your Azure OpenAI credentials via --dart-define at run time:
+/// Uses GitHub Models (free tier) backed by Azure AI infrastructure.
+/// Pass credentials via --dart-define:
 ///   flutter run \
-///     --dart-define=AZURE_OPENAI_ENDPOINT=https://YOUR_RESOURCE.openai.azure.com \
-///     --dart-define=AZURE_OPENAI_KEY=YOUR_KEY_HERE \
+///     --dart-define=GITHUB_TOKEN=ghp_xxxx \
 ///     --dart-define=AZURE_OPENAI_DEPLOYMENT=gpt-4o
-///
-/// Or create a local launch config in .vscode/launch.json / run configs.
 class AppConfig {
-  // ── Azure OpenAI ──────────────────────────────────────────────────────────
-  static const String azureEndpoint = String.fromEnvironment(
-    'AZURE_OPENAI_ENDPOINT',
-    defaultValue: 'https://YOUR_RESOURCE.openai.azure.com',
-  );
-
-  static const String azureApiKey = String.fromEnvironment(
-    'AZURE_OPENAI_KEY',
+  // ── GitHub Models ────────────────────────────────────────────────────────
+  static const String githubToken = String.fromEnvironment(
+    'GITHUB_TOKEN',
     defaultValue: '',
   );
 
@@ -24,10 +17,9 @@ class AppConfig {
     defaultValue: 'gpt-4o',
   );
 
-  /// Full Azure OpenAI chat completions URL
-  static String get azureChatUrl =>
-      '$azureEndpoint/openai/deployments/$azureDeployment'
-      '/chat/completions?api-version=2024-08-01-preview';
+  /// GitHub Models chat completions endpoint (Azure-backed, OpenAI-compatible)
+  static const String chatUrl =
+      'https://models.inference.ai.azure.com/chat/completions';
 
   // ── App metadata ──────────────────────────────────────────────────────────
   static const String appName = 'KinetiQ';

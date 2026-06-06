@@ -144,12 +144,12 @@ class _DashboardTab extends ConsumerWidget {
                   children: [
                     Text('Good morning 👋',
                         style: GoogleFonts.inter(
-                          fontSize: 13, color: AppColors.textSecondary,
+                          fontSize: 12, color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
                         )),
                     Text('KinetiQ',
                         style: GoogleFonts.inter(
-                          fontSize: 26, fontWeight: FontWeight.w800,
+                          fontSize: 22, fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary, letterSpacing: -0.5,
                           height: 1.1,
                         )),
