@@ -392,9 +392,7 @@ class _SelectCard extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withOpacity(0.12)
-              : AppColors.surfaceCard,
+          color: isSelected ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surfaceCard,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: isSelected ? AppColors.primary : const Color(0xFF1E2D48),
@@ -406,9 +404,7 @@ class _SelectCard extends StatelessWidget {
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? AppColors.primary.withOpacity(0.15)
-                    : AppColors.background,
+                color: isSelected ? AppColors.primary.withValues(alpha: 0.15) : AppColors.background,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(

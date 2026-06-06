@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:uuid/uuid.dart';
-import '../../data/models/user_profile.dart';
+import '../../../data/models/user_profile.dart';
 
 /// Holds the in-progress onboarding answers before saving
 class OnboardingState {
